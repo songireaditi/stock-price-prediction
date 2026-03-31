@@ -39,7 +39,7 @@ def predict():
         print("\nStock Data:\n")
         print(stock_data)
 
-        # 🔥 Convert data for frontend
+        #  Convert data for frontend
         history = []
 
         stock_data = stock_data.reset_index()
