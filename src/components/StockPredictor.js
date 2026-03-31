@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { motion } from "framer-motion";
+
 import {
   LineChart,
   Line,
@@ -15,30 +17,31 @@ function StockPredictor() {
   const [symbol, setSymbol] = useState("");
   const [lrPrediction, setLrPrediction] = useState(null);
   const [knnPrediction, setKnnPrediction] = useState(null);
+  const [chartData, setChartData] = useState([]);
 
-  const data = [
-    { day: "Mon", price: 120 },
-    { day: "Tue", price: 125 },
-    { day: "Wed", price: 123 },
-    { day: "Thu", price: 130 },
-    { day: "Fri", price: 128 },
-  ];
+  const handlePredict = async () => {
+    try {
+      const res = await axios.post("http://127.0.0.1:5000/predict", {
+        symbol: symbol
+      });
 
-  const handlePredict = () => {
-    setLrPrediction(182.45);
-    setKnnPrediction(181.72);
+      setLrPrediction(res.data.linear_regression);
+      setKnnPrediction(res.data.knn);
+     setChartData([...res.data.history]);
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(135deg,#f5f7fa,#e4e8f0)"
-      }}
-    >
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      background: "linear-gradient(135deg,#f5f7fa,#e4e8f0)"
+    }}>
+
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -47,11 +50,12 @@ function StockPredictor() {
           background: "white",
           padding: "40px",
           borderRadius: "12px",
-          width: "500px",
+          width: "600px",
           textAlign: "center",
           boxShadow: "0 8px 20px rgba(0,0,0,0.08)"
         }}
       >
+
         <h2>📈 Stock Price Predictor</h2>
 
         <input
@@ -65,8 +69,7 @@ function StockPredictor() {
             marginTop: "20px",
             borderRadius: "8px",
             border: "1px solid #ddd",
-            outline: "none",
-            fontSize: "15px"
+            outline: "none"
           }}
         />
 
@@ -83,76 +86,67 @@ function StockPredictor() {
             border: "none",
             borderRadius: "8px",
             cursor: "pointer",
-            fontWeight: "bold",
-            letterSpacing: "0.5px"
+            fontWeight: "bold"
           }}
         >
           Predict
         </motion.button>
+        {/* <p>{JSON.stringify(chartData)}</p> */}
 
-        {/* Chart */}
-
-        <div style={{ width: "100%", height: 250, marginTop: "30px" }}>
-          <ResponsiveContainer>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-
-              <XAxis dataKey="day" />
-
-              <YAxis />
-
-              <Tooltip />
-
-              <Line
-                type="monotone"
-                dataKey="price"
-                stroke="#5a67d8"
-                strokeWidth={3}
-                dot={{ r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Prediction Cards */}
-
-        {lrPrediction && (
-          <div
-            style={{
-              display: "flex",
-              gap: "20px",
-              marginTop: "25px"
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                padding: "15px",
-                borderRadius: "10px",
-                background: "#f7f8fc",
-                textAlign: "center",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.05)"
-              }}
-            >
-              <h4>📈 Linear Regression</h4>
-              <h2>${lrPrediction}</h2>
-            </div>
-
-            <div
-              style={{
-                flex: 1,
-                padding: "15px",
-                borderRadius: "10px",
-                background: "#f7f8fc",
-                textAlign: "center",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.05)"
-              }}
-            >
-              <h4>KNN Prediction</h4>
-              <h2>${knnPrediction}</h2>
-            </div>
+        {/* Graph */}
+        {chartData.length > 0 && (
+          <div style={{ width: "100%", height: 250, marginTop: "30px" }}>
+            <ResponsiveContainer>
+              <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" tick={{fontSize : 10}} />
+                <YAxis domain={['dataMin - 5', 'dataMax + 5']} />
+                <Tooltip />
+                <Line
+                  type="natural"
+                  dataKey="close"
+                  stroke="#5a67d8"
+                  strokeWidth={3}
+                  dot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         )}
+
+        {/* Prediction Cards */}
+        {lrPrediction && (
+          <div style={{
+            display: "flex",
+            gap: "20px",
+            marginTop: "25px"
+          }}>
+
+            <div style={{
+              flex: 1,
+              padding: "15px",
+              borderRadius: "10px",
+              background: "#f7f8fc",
+              textAlign: "center"
+            }}>
+              <h4>📈 Linear Regression</h4>
+              <h2>${lrPrediction.toFixed(2)}</h2>
+            </div>
+
+            <div style={{
+              flex: 1,
+              padding: "15px",
+              borderRadius: "10px",
+              background: "#f7f8fc",
+              textAlign: "center"
+            }}>
+              <h4>🤖 KNN Prediction</h4>
+              <h2>${knnPrediction.toFixed(2)}</h2>
+            </div>
+
+          </div>
+        )}
+
       </motion.div>
     </div>
   );
